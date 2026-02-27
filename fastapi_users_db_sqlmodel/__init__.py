@@ -6,7 +6,7 @@ from fastapi_users.db.base import BaseUserDatabase
 from fastapi_users.models import ID, OAP, UP
 from pydantic import UUID4, EmailStr, ConfigDict
 from pydantic.version import VERSION as PYDANTIC_VERSION
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import Field, Session, SQLModel, func, select, AutoString
 
