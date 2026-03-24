@@ -1,17 +1,19 @@
 """FastAPI Users database adapter for SQLModel."""
+
 import uuid
 from typing import TYPE_CHECKING, Any, Dict, Generic, Optional, Type
 
 from fastapi_users.db.base import BaseUserDatabase
 from fastapi_users.models import ID, OAP, UP
-from pydantic import UUID4, EmailStr, ConfigDict
+from pydantic import UUID4, ConfigDict, EmailStr
 from pydantic.version import VERSION as PYDANTIC_VERSION
-from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlmodel import Field, Session, SQLModel, func, select, AutoString
+from sqlmodel import AutoString, Field, Session, SQLModel, func, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 __version__ = "0.3.0"
 PYDANTIC_V2 = PYDANTIC_VERSION.startswith("2.")
+
 
 class SQLModelBaseUserDB(SQLModel):
     __tablename__ = "user"
@@ -21,8 +23,9 @@ class SQLModelBaseUserDB(SQLModel):
         email: str
     else:
         email: EmailStr = Field(
-            sa_column_kwargs={"unique": True, "index": True}, nullable=False,
-            sa_type=AutoString
+            sa_column_kwargs={"unique": True, "index": True},
+            nullable=False,
+            sa_type=AutoString,
         )
     hashed_password: str
 
@@ -181,10 +184,10 @@ class SQLModelUserDatabaseAsync(Generic[UP, ID], BaseUserDatabase[UP, ID]):
 
     async def get_by_email(self, email: str) -> Optional[UP]:
         """Get a single user by email."""
-        statement = select(self.user_model).where(  # type: ignore
+        statement = select(self.user_model).where(
             func.lower(self.user_model.email) == func.lower(email)
         )
-        results = await self.session.execute(statement)
+        results = await self.session.exec(statement)
         object = results.first()
         if object is None:
             return None
@@ -198,9 +201,9 @@ class SQLModelUserDatabaseAsync(Generic[UP, ID], BaseUserDatabase[UP, ID]):
             select(self.oauth_account_model)
             .where(self.oauth_account_model.oauth_name == oauth)
             .where(self.oauth_account_model.account_id == account_id)
-            .options(selectinload(self.oauth_account_model.user))  # type: ignore
+            .options(selectinload(self.oauth_account_model.user))
         )
-        results = await self.session.execute(statement)
+        results = await self.session.exec(statement)
         oauth_account = results.first()
         if oauth_account:
             user = oauth_account[0].user  # type: ignore
