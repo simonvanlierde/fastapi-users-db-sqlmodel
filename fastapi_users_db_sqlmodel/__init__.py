@@ -202,7 +202,7 @@ class SQLModelUserDatabaseAsync(Generic[UP, ID], BaseUserDatabase[UP, ID]):
         results = await self.session.exec(statement)
         oauth_account = results.unique().one_or_none()
         if oauth_account:
-            return oauth_account.user  # type: ignore[attr-defined]
+            return oauth_account.user
         return None
 
     async def create(self, create_dict: Dict[str, Any]) -> UP:
@@ -230,7 +230,7 @@ class SQLModelUserDatabaseAsync(Generic[UP, ID], BaseUserDatabase[UP, ID]):
             raise NotImplementedError()
 
         oauth_account = self.oauth_account_model(**create_dict)
-        user.oauth_accounts.append(oauth_account)  # type: ignore
+        user.oauth_accounts.append(oauth_account)
         self.session.add(user)
 
         await self.session.commit()
