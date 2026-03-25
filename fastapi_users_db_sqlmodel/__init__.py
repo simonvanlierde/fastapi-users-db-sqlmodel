@@ -92,7 +92,7 @@ class SQLModelUserDatabase(Generic[UP, ID], BaseUserDatabase[UP, ID]):
             func.lower(self.user_model.email) == func.lower(email)
         )
         results = self.session.exec(statement)
-        return results.first()
+        return results.unique().one_or_none()
 
     async def get_by_oauth_account(self, oauth: str, account_id: str) -> Optional[UP]:
         """Get a single user by OAuth account id."""
@@ -104,10 +104,9 @@ class SQLModelUserDatabase(Generic[UP, ID], BaseUserDatabase[UP, ID]):
             .where(self.oauth_account_model.account_id == account_id)
         )
         results = self.session.exec(statement)
-        oauth_account = results.first()
+        oauth_account = results.unique().one_or_none()
         if oauth_account:
-            user = oauth_account.user  # type: ignore
-            return user
+            return oauth_account.user  # type: ignore[attr-defined]
         return None
 
     async def create(self, create_dict: Dict[str, Any]) -> UP:
@@ -188,10 +187,7 @@ class SQLModelUserDatabaseAsync(Generic[UP, ID], BaseUserDatabase[UP, ID]):
             func.lower(self.user_model.email) == func.lower(email)
         )
         results = await self.session.exec(statement)
-        object = results.first()
-        if object is None:
-            return None
-        return object[0]
+        return results.unique().one_or_none()
 
     async def get_by_oauth_account(self, oauth: str, account_id: str) -> Optional[UP]:
         """Get a single user by OAuth account id."""
@@ -201,13 +197,12 @@ class SQLModelUserDatabaseAsync(Generic[UP, ID], BaseUserDatabase[UP, ID]):
             select(self.oauth_account_model)
             .where(self.oauth_account_model.oauth_name == oauth)
             .where(self.oauth_account_model.account_id == account_id)
-            .options(selectinload(self.oauth_account_model.user))
+            .options(selectinload(self.oauth_account_model.user))  # type: ignore[attr-defined]
         )
         results = await self.session.exec(statement)
-        oauth_account = results.first()
+        oauth_account = results.unique().one_or_none()
         if oauth_account:
-            user = oauth_account[0].user  # type: ignore
-            return user
+            return oauth_account.user  # type: ignore[attr-defined]
         return None
 
     async def create(self, create_dict: Dict[str, Any]) -> UP:

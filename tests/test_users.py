@@ -5,9 +5,10 @@ import pytest
 import pytest_asyncio
 from pydantic import UUID4
 from sqlalchemy import exc
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from fastapi_users_db_sqlmodel import SQLModelUserDatabase, SQLModelUserDatabaseAsync
 from tests.conftest import OAuthAccount, User, UserOAuth
@@ -140,6 +141,43 @@ async def test_insert_existing_email(
 
     with pytest.raises(exc.IntegrityError):
         await sqlmodel_user_db.create(user_create)
+
+
+@pytest.mark.asyncio
+async def test_get_by_email_missing_returns_none(
+    sqlmodel_user_db: SQLModelUserDatabase[User, UUID4],
+):
+    unknown_user = await sqlmodel_user_db.get_by_email("missing@camelot.bt")
+    assert unknown_user is None
+
+
+@pytest.mark.asyncio
+async def test_get_by_oauth_account_missing_returns_none(
+    sqlmodel_user_db_oauth: SQLModelUserDatabase[UserOAuth, UUID4],
+):
+    unknown_oauth_user = await sqlmodel_user_db_oauth.get_by_oauth_account(
+        "missing", "missing"
+    )
+    assert unknown_oauth_user is None
+
+
+@pytest.mark.asyncio
+async def test_get_by_oauth_account_returns_linked_user(
+    sqlmodel_user_db_oauth: SQLModelUserDatabase[UserOAuth, UUID4],
+    oauth_account1: Dict[str, Any],
+):
+    user_create = {
+        "email": "lancelot@camelot.bt",
+        "hashed_password": "guinevere",
+    }
+    user = await sqlmodel_user_db_oauth.create(user_create)
+    await sqlmodel_user_db_oauth.add_oauth_account(user, oauth_account1)
+
+    oauth_user = await sqlmodel_user_db_oauth.get_by_oauth_account(
+        oauth_account1["oauth_name"], oauth_account1["account_id"]
+    )
+    assert oauth_user is not None
+    assert oauth_user.id == user.id
 
 
 @pytest.mark.asyncio
